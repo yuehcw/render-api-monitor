@@ -1,0 +1,25 @@
+cat > .github/workflows/check-api.yml << 'EOF'
+name: Check API Status
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # Run every 10 minutes
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API and restart if needed
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://padres-backend.onrender.com)
+          if [ "$STATUS" != "200" ]; then
+            echo "API is down, triggering restart"
+            curl -X POST \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              https://api.render.com/v1/services/srv-cur6rnlumphs73ambhk0/deploys
+          else
+            echo "API is healthy"
+          fi
+EOF
